@@ -530,65 +530,86 @@
             Here are real queries your team can run:
         </p>
 
-        <div class="scenario-tabs">
-            <span class="scenario-tab active">All</span>
-            <span class="scenario-tab">Localization</span>
-            <span class="scenario-tab">Perception</span>
+        <div class="scenario-tabs" id="edge-tabs">
+            <span class="scenario-tab active" data-filter="all">All</span>
+            <span class="scenario-tab" data-filter="localization">Localization</span>
+            <span class="scenario-tab" data-filter="perception">Perception</span>
         </div>
 
-        <div class="scenario-grid">
-            <!-- Localization -->
-            <div class="scenario-card">
+        <div class="scenario-grid" id="scenario-grid">
+            <div class="scenario-card" data-category="localization">
                 <span class="scenario-label label-loc">Localization</span>
-                <h3>Sudden speed drop after high speed</h3>
-                <p>Find scenes where the vehicle decelerates sharply &mdash; potential localization jumps or GPS multipath near buildings.</p>
-                <div class="scenario-query"><span class="cmd">$</span> scene-db search <span class="t-a">"stationary"</span></div>
+                <h3>High yaw rate &mdash; IMU heading drift</h3>
+                <p>Sharp turns stress the EKF heading estimate. IMU gyro bias and wheel slip both accumulate here. Found 30+ deg/s peaks in KITTI and PPC data.</p>
+                <div class="scenario-query"><span class="cmd">$</span> scene-db search --min-yaw 20 --sort yaw</div>
             </div>
-            <div class="scenario-card">
+            <div class="scenario-card" data-category="localization">
                 <span class="scenario-label label-loc">Localization</span>
-                <h3>Low-speed maneuvering</h3>
-                <p>Parking lots and U-turns where dead-reckoning accumulates drift. Wheel odometry vs. IMU divergence lives here.</p>
-                <div class="scenario-query"><span class="cmd">$</span> scene-db search <span class="t-a">"moving slowly"</span></div>
+                <h3>High speed &mdash; GPS latency amplified</h3>
+                <p>At 77 km/h, a 50ms GPS delay = 1.1m position error. LiDAR scan distortion from ego-motion is also maximal.</p>
+                <div class="scenario-query"><span class="cmd">$</span> scene-db search --min-speed 60 --sort speed</div>
             </div>
-            <div class="scenario-card">
+            <div class="scenario-card" data-category="localization">
                 <span class="scenario-label label-loc">Localization</span>
-                <h3>High-speed highway</h3>
-                <p>GPS updates arrive at 10 Hz but you're covering 30 m/s. Any latency in the fusion pipeline shows up here.</p>
-                <div class="scenario-query"><span class="cmd">$</span> scene-db search <span class="t-a">"high speed"</span></div>
+                <h3>Low-speed maneuvering &mdash; dead-reckoning drift</h3>
+                <p>Parking, U-turns, crawling in traffic. Wheel odometry resolution limits dominate. GPS multipath in urban canyons.</p>
+                <div class="scenario-query"><span class="cmd">$</span> scene-db search --max-speed 5 --sort speed</div>
+            </div>
+            <div class="scenario-card" data-category="localization">
+                <span class="scenario-label label-loc">Localization</span>
+                <h3>Start from stop &mdash; GNSS reacquisition</h3>
+                <p>After standstill, initial velocity is noisy. GNSS often reacquires with a position jump. IMU integration restarts.</p>
+                <div class="scenario-query"><span class="cmd">$</span> scene-db search "stationary"</div>
+            </div>
+            <div class="scenario-card" data-category="localization">
+                <span class="scenario-label label-loc">Localization</span>
+                <h3>Loop closure &mdash; place revisit</h3>
+                <p>Does the trajectory return to its starting point? scene-db detects loops and counts revisits for SLAM evaluation.</p>
+                <div class="scenario-query"><span class="cmd">$</span> scene-db sequences</div>
             </div>
 
-            <!-- Perception -->
-            <div class="scenario-card">
+            <div class="scenario-card" data-category="perception">
+                <span class="scenario-label label-per">Perception</span>
+                <h3>Hard braking &mdash; pitch shift</h3>
+                <p>Braking tilts the vehicle forward. LiDAR FOV shifts, camera horizon drops. Detected 2.5+ m/s&sup2; events in KITTI.</p>
+                <div class="scenario-query"><span class="cmd">$</span> scene-db search --min-decel 2.0 --sort decel</div>
+            </div>
+            <div class="scenario-card" data-category="perception">
+                <span class="scenario-label label-per">Perception</span>
+                <h3>Approach to stop &mdash; tracking handoff</h3>
+                <p>Transitioning from motion-based to static perception. Object trackers often drop detections in this zone.</p>
+                <div class="scenario-query"><span class="cmd">$</span> scene-db search "slowly" --min-decel 1.0</div>
+            </div>
+            <div class="scenario-card" data-category="perception">
                 <span class="scenario-label label-per">Perception</span>
                 <h3>Scenes with poor visibility</h3>
                 <p>Low contrast, overexposure, rain on lens. VLM captions catch what rule-based features miss.</p>
-                <div class="scenario-query"><span class="cmd">$</span> scene-db search -s <span class="t-a">"dark road with glare"</span></div>
+                <div class="scenario-query"><span class="cmd">$</span> scene-db search -s "dark road with glare"</div>
             </div>
-            <div class="scenario-card">
+            <div class="scenario-card" data-category="perception">
                 <span class="scenario-label label-per">Perception</span>
                 <h3>Crowded intersections</h3>
                 <p>Multiple pedestrians, cyclists, turning vehicles &mdash; the combinatorial explosion that detectors struggle with.</p>
-                <div class="scenario-query"><span class="cmd">$</span> scene-db search -s <span class="t-a">"busy intersection pedestrians"</span></div>
-            </div>
-            <div class="scenario-card">
-                <span class="scenario-label label-per">Perception</span>
-                <h3>Construction zones</h3>
-                <p>Temporary signs, cones, lane shifts. Your HD map is wrong and perception is all you have.</p>
-                <div class="scenario-query"><span class="cmd">$</span> scene-db search -s <span class="t-a">"construction zone cones"</span></div>
+                <div class="scenario-query"><span class="cmd">$</span> scene-db search -s "busy intersection pedestrians"</div>
             </div>
 
-            <!-- Both -->
-            <div class="scenario-card">
+            <div class="scenario-card" data-category="both">
+                <span class="scenario-label label-both">Loc + Per</span>
+                <h3>Yaw + brake combo &mdash; multi-axis stress</h3>
+                <p>Simultaneous turning and braking. All sensor modalities stressed: IMU coupling, wheel slip, pitch + yaw change.</p>
+                <div class="scenario-query"><span class="cmd">$</span> scene-db search --min-yaw 10 --min-decel 1.0</div>
+            </div>
+            <div class="scenario-card" data-category="both">
                 <span class="scenario-label label-both">Loc + Per</span>
                 <h3>Tunnels &amp; underpasses</h3>
                 <p>GPS denied + lighting transition. Localization falls back to LiDAR/IMU while cameras adapt to darkness.</p>
-                <div class="scenario-query"><span class="cmd">$</span> scene-db search -s <span class="t-a">"tunnel entrance dark"</span></div>
+                <div class="scenario-query"><span class="cmd">$</span> scene-db search -s "tunnel entrance dark"</div>
             </div>
-            <div class="scenario-card">
+            <div class="scenario-card" data-category="both">
                 <span class="scenario-label label-both">Loc + Per</span>
-                <h3>Wet road reflections</h3>
-                <p>LiDAR gets ghost returns from puddles. Camera sees reflected sky. Both stacks get confused simultaneously.</p>
-                <div class="scenario-query"><span class="cmd">$</span> scene-db search -s <span class="t-a">"wet road reflections rain"</span></div>
+                <h3>Automatic detection</h3>
+                <p>Don't know what to search for? Let scene-db find edge cases automatically with rule-based heuristics.</p>
+                <div class="scenario-query"><span class="cmd">$</span> scene-db edge-cases --severity critical</div>
             </div>
         </div>
     </div>
@@ -599,12 +620,19 @@
     <div class="container">
         <h2>Real edge cases from KITTI</h2>
         <p>
-            These scenes were found by running <code>scene-db</code> on 25 KITTI + nuScenes + GLIM rosbag (210 scenes, 8210 frames).
+            These scenes were found by running <code>scene-db</code> on 2807 scenes across KITTI, nuScenes, GLIM, Cartographer, and PPC datasets.
             Each GIF is a 5-second chunk extracted by the tool.
         </p>
 
-        <div class="gallery-grid">
-            <div class="gallery-card">
+        <div class="scenario-tabs" id="gallery-tabs">
+            <span class="scenario-tab active" data-filter="all">All</span>
+            <span class="scenario-tab" data-filter="localization">Localization</span>
+            <span class="scenario-tab" data-filter="perception">Perception</span>
+            <span class="scenario-tab" data-filter="both">Loc + Per</span>
+        </div>
+
+        <div class="gallery-grid" id="gallery-grid">
+            <div class="gallery-card" data-category="localization">
                 <img src="assets/turning.gif" alt="Turning scene at intersection" loading="lazy">
                 <div class="gallery-card-body">
                     <h3>Intersection turn &mdash; localization stress test</h3>
@@ -618,7 +646,7 @@
                 </div>
             </div>
 
-            <div class="gallery-card">
+            <div class="gallery-card" data-category="localization">
                 <img src="assets/curve.gif" alt="Continuous curve scene" loading="lazy">
                 <div class="gallery-card-body">
                     <h3>Continuous curve &mdash; dead-reckoning drift</h3>
@@ -632,7 +660,7 @@
                 </div>
             </div>
 
-            <div class="gallery-card">
+            <div class="gallery-card" data-category="perception">
                 <img src="assets/stopping.gif" alt="Vehicle stopping scene" loading="lazy">
                 <div class="gallery-card-body">
                     <h3>Approach to stop &mdash; perception critical zone</h3>
@@ -646,7 +674,7 @@
                 </div>
             </div>
 
-            <div class="gallery-card">
+            <div class="gallery-card" data-category="localization">
                 <img src="assets/sharp-turn.gif" alt="Sharp turn with braking" loading="lazy">
                 <div class="gallery-card-body">
                     <h3>Sharp turn + braking &mdash; worst-case localization</h3>
@@ -661,7 +689,7 @@
                 </div>
             </div>
 
-            <div class="gallery-card">
+            <div class="gallery-card" data-category="both">
                 <img src="assets/highspeed-brake.gif" alt="High speed braking" loading="lazy">
                 <div class="gallery-card-body">
                     <h3>High-speed braking &mdash; 58 km/h deceleration</h3>
@@ -675,7 +703,7 @@
                 </div>
             </div>
 
-            <div class="gallery-card">
+            <div class="gallery-card" data-category="perception">
                 <img src="assets/coming-to-stop.gif" alt="Vehicle coming to complete stop" loading="lazy">
                 <div class="gallery-card-body">
                     <h3>Coming to stop &mdash; perception handoff zone</h3>
@@ -689,7 +717,7 @@
                 </div>
             </div>
 
-            <div class="gallery-card">
+            <div class="gallery-card" data-category="both">
                 <img src="assets/forward.gif" alt="Forward driving with braking" loading="lazy">
                 <div class="gallery-card-body">
                     <h3>Highway braking &mdash; sensor fusion latency</h3>
@@ -703,7 +731,7 @@
                 </div>
             </div>
 
-            <div class="gallery-card">
+            <div class="gallery-card" data-category="localization">
                 <img src="assets/start-from-stop.gif" alt="Vehicle starting from standstill" loading="lazy">
                 <div class="gallery-card-body">
                     <h3>Start from stop &mdash; static-to-dynamic transition</h3>
@@ -717,7 +745,7 @@
                 </div>
             </div>
 
-            <div class="gallery-card">
+            <div class="gallery-card" data-category="localization">
                 <img src="assets/fastest.gif" alt="Fastest scene at 77 km/h" loading="lazy">
                 <div class="gallery-card-body">
                     <h3>77 km/h &mdash; fastest in dataset, GPS latency critical</h3>
@@ -730,7 +758,7 @@
                 </div>
             </div>
 
-            <div class="gallery-card">
+            <div class="gallery-card" data-category="both">
                 <img src="assets/hardest-brake.gif" alt="Hardest braking scene" loading="lazy">
                 <div class="gallery-card-body">
                     <h3>Hardest braking &mdash; 2.5 m/s&sup2; from 43 km/h</h3>
@@ -744,7 +772,7 @@
                 </div>
             </div>
 
-            <div class="gallery-card">
+            <div class="gallery-card" data-category="both">
                 <img src="assets/yaw-brake-combo.gif" alt="Combined yaw and braking" loading="lazy">
                 <div class="gallery-card-body">
                     <h3>Yaw + brake combo &mdash; worst-case multi-axis stress</h3>
@@ -759,7 +787,7 @@
                 </div>
             </div>
 
-            <div class="gallery-card">
+            <div class="gallery-card" data-category="localization">
                 <img src="assets/sharp-turn2.gif" alt="Sharp turn at low speed" loading="lazy">
                 <div class="gallery-card-body">
                     <h3>Sharp turn #2 &mdash; low-speed yaw peak</h3>
@@ -773,7 +801,7 @@
                 </div>
             </div>
 
-            <div class="gallery-card">
+            <div class="gallery-card" data-category="localization">
                 <img src="assets/turn-029.gif" alt="Intersection turn" loading="lazy">
                 <div class="gallery-card-body">
                     <h3>Intersection turn &mdash; multi-lane crossing</h3>
@@ -787,7 +815,7 @@
                 </div>
             </div>
 
-            <div class="gallery-card">
+            <div class="gallery-card" data-category="both">
                 <img src="assets/hard-brake-kitti.gif" alt="Hard braking in KITTI" loading="lazy">
                 <div class="gallery-card-body">
                     <h3>Hard braking &mdash; first KITTI hard-brake detected</h3>
@@ -958,5 +986,35 @@
     </div>
 </footer>
 
+<script>
+function setupTabs(tabsId, gridId) {
+    var tabs = document.getElementById(tabsId);
+    var grid = document.getElementById(gridId);
+    if (!tabs || !grid) return;
+
+    tabs.addEventListener('click', function(e) {
+        var tab = e.target.closest('.scenario-tab');
+        if (!tab) return;
+
+        var allTabs = tabs.querySelectorAll('.scenario-tab');
+        for (var i = 0; i < allTabs.length; i++) allTabs[i].classList.remove('active');
+        tab.classList.add('active');
+
+        var filter = tab.getAttribute('data-filter');
+        var cards = grid.children;
+
+        for (var j = 0; j < cards.length; j++) {
+            var cat = cards[j].getAttribute('data-category');
+            if (!cat) continue;
+            var show = (filter === 'all') || (cat === filter) ||
+                       ((filter === 'localization' || filter === 'perception') && cat === 'both');
+            cards[j].style.display = show ? '' : 'none';
+        }
+    });
+}
+
+setupTabs('edge-tabs', 'scenario-grid');
+setupTabs('gallery-tabs', 'gallery-grid');
+</script>
 </body>
 </html>
