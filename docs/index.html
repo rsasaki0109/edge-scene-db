@@ -947,34 +947,111 @@
 <!-- ── Datasets ── -->
 <section class="datasets">
     <div class="container">
-        <h2>Supported datasets</h2>
+        <h2>8 datasets, 2843 scenes, 99K frames</h2>
         <div class="dataset-row">
             <div class="dataset-badge">
                 <div class="icon">&#x1F697;</div>
                 <div>
                     <div class="name">KITTI</div>
-                    <div class="desc">oxts, cameras, LiDAR</div>
+                    <div class="desc">25 seq, cameras+LiDAR+GPS/IMU</div>
                 </div>
             </div>
             <div class="dataset-badge">
                 <div class="icon">&#x1F6F0;</div>
                 <div>
                     <div class="name">nuScenes</div>
-                    <div class="desc">6 cameras, LiDAR, RADAR</div>
+                    <div class="desc">6cam+LiDAR+RADAR</div>
+                </div>
+            </div>
+            <div class="dataset-badge">
+                <div class="icon">&#x1F4E1;</div>
+                <div>
+                    <div class="name">PPC Dataset</div>
+                    <div class="desc">GNSS+IMU, Nagoya/Tokyo</div>
+                </div>
+            </div>
+        </div>
+        <div class="dataset-row" style="margin-top: 12px;">
+            <div class="dataset-badge">
+                <div class="icon">&#x1F916;</div>
+                <div>
+                    <div class="name">GLIM</div>
+                    <div class="desc">Ouster OS1-128+IMU</div>
+                </div>
+            </div>
+            <div class="dataset-badge">
+                <div class="icon">&#x1F3D7;</div>
+                <div>
+                    <div class="name">AIST Park</div>
+                    <div class="desc">Ouster+IMU, decel 11.2 m/s&sup2;</div>
+                </div>
+            </div>
+            <div class="dataset-badge">
+                <div class="icon">&#x1F9F1;</div>
+                <div>
+                    <div class="name">Flatwall</div>
+                    <div class="desc">Livox+IMU, LiDAR degeneration</div>
+                </div>
+            </div>
+        </div>
+        <div class="dataset-row" style="margin-top: 12px;">
+            <div class="dataset-badge">
+                <div class="icon">&#x1F392;</div>
+                <div>
+                    <div class="name">Cartographer 3D</div>
+                    <div class="desc">2x VLP-16+IMU, 20min</div>
                 </div>
             </div>
             <div class="dataset-badge" style="border-style: dashed; opacity: 0.5;">
                 <div class="icon">&#x2795;</div>
                 <div>
                     <div class="name">Your format</div>
-                    <div class="desc">Add an ingest module</div>
+                    <div class="desc">rosbag or CSV</div>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
-<!-- ── Footer ��─ -->
+<!-- SLAM Validation -->
+<section class="features" id="slam-validation">
+    <div class="container">
+        <h2>Which data for your LiDAR SLAM?</h2>
+        <div class="feature-grid">
+            <div class="feature-card" style="border-left: 3px solid #3fb950;">
+                <h3>Basic sanity check</h3>
+                <p><strong>GLIM os1_128</strong> (491 MB, 115s)<br>
+                Ouster OS1-128 + IMU. Small, fast to download. Confirm your pipeline runs.</p>
+            </div>
+            <div class="feature-card" style="border-left: 3px solid #f85149;">
+                <h3>Aggressive dynamics</h3>
+                <p><strong>AIST Park</strong> (2.1 GB, 144s)<br>
+                Max decel <strong>11.2 m/s&sup2;</strong> across all datasets. Repeated hard braking events (8.4, 7.2, 6.9 m/s&sup2;). Tests if your ESKF/EKF tracks through violent acceleration changes. Ouster + IMU.</p>
+            </div>
+            <div class="feature-card" style="border-left: 3px solid #e3983e;">
+                <h3>LiDAR degeneration</h3>
+                <p><strong>Flatwall</strong> (306 MB, 33s)<br>
+                Wall-only environment where LiDAR scan matching degenerates. Without IMU, localization fails. The critical test for IMU-LiDAR coupling.</p>
+            </div>
+            <div class="feature-card" style="border-left: 3px solid #b48eff;">
+                <h3>Long-term drift</h3>
+                <p><strong>Cartographer 3D</strong> (9.3 GB, 20min)<br>
+                20 minutes of continuous operation. IMU-only speed drifts to 6000+ km/h. Your SLAM must prevent this.</p>
+            </div>
+            <div class="feature-card" style="border-left: 3px solid #4ea8f6;">
+                <h3>Loop closure</h3>
+                <p><strong>PPC Tokyo run1/run2</strong><br>
+                9.9 km with <strong>loop detected</strong> (2m closure). 1386 revisits. RTK-GNSS ground truth.</p>
+            </div>
+            <div class="feature-card" style="border-left: 3px solid #e3d555;">
+                <h3>High yaw rate</h3>
+                <p><strong>KITTI drive_0014 / PPC Tokyo run3</strong><br>
+                Up to <strong>30.2 deg/s</strong>. Intersection turns that stress heading estimation.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
 <footer>
     <div class="container">
         <p>
