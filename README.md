@@ -162,7 +162,7 @@ Dataset (KITTI / nuScenes)
 ## Development
 
 ```bash
-git clone https://github.com/rsasaki0109/scene-db.git
+git clone https://github.com/rsasaki0109/edge-scene-db.git
 cd scene-db
 python3 -m venv .venv
 source .venv/bin/activate

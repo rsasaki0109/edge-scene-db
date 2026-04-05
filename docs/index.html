@@ -6,7 +6,7 @@
     <title>scene-db &mdash; Find the failures hiding in your driving logs</title>
     <meta property="og:title" content="scene-db">
     <meta property="og:description" content="Find the failures hiding in your driving logs. Search and extract edge-case scenes from KITTI and nuScenes data.">
-    <meta property="og:image" content="https://rsasaki0109.github.io/scene-db/assets/og-image.png">
+    <meta property="og:image" content="https://rsasaki0109.github.io/edge-scene-db/assets/og-image.png">
     <meta property="og:type" content="website">
     <style>
         :root {
@@ -483,7 +483,7 @@
             then search for the exact edge cases that break your localization or perception stack.
         </p>
         <div class="hero-actions">
-            <a href="https://github.com/rsasaki0109/scene-db" class="btn btn-primary">GitHub</a>
+            <a href="https://github.com/rsasaki0109/edge-scene-db" class="btn btn-primary">GitHub</a>
             <a href="#gallery" class="btn btn-ghost">See Real Scenes</a>
         </div>
         <div class="install-bar">
@@ -599,7 +599,7 @@
     <div class="container">
         <h2>Real edge cases from KITTI</h2>
         <p>
-            These scenes were found by running <code>scene-db</code> on KITTI raw data.
+            These scenes were found by running <code>scene-db</code> on 12 KITTI sequences (62 scenes, 2725 frames).
             Each GIF is a 5-second chunk extracted by the tool.
         </p>
 
@@ -647,6 +647,49 @@
             </div>
 
             <div class="gallery-card">
+                <img src="assets/sharp-turn.gif" alt="Sharp turn with braking" loading="lazy">
+                <div class="gallery-card-body">
+                    <h3>Sharp turn + braking &mdash; worst-case localization</h3>
+                    <p>drive_0014 frame 0-48. Peak yaw rate in the entire dataset. Simultaneous turning
+                       and braking maximizes IMU error coupling. Wheel odometry is unreliable here.</p>
+                    <div class="gallery-tags">
+                        <span class="gallery-tag tag-label">Localization</span>
+                        <span class="gallery-tag tag-yaw">yaw 30.0 &deg;/s</span>
+                        <span class="gallery-tag tag-decel">decel 1.9 m/s&sup2;</span>
+                        <span class="gallery-tag tag-speed">23 km/h</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card">
+                <img src="assets/highspeed-brake.gif" alt="High speed braking" loading="lazy">
+                <div class="gallery-card-body">
+                    <h3>High-speed braking &mdash; 58 km/h deceleration</h3>
+                    <p>drive_0015 frame 0-48. Fastest sequence in the dataset. At 16 m/s, GPS update
+                       latency and LiDAR scan distortion from ego-motion become significant.</p>
+                    <div class="gallery-tags">
+                        <span class="gallery-tag tag-label">Loc + Per</span>
+                        <span class="gallery-tag tag-decel">decel 1.8 m/s&sup2;</span>
+                        <span class="gallery-tag tag-speed">58 km/h</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card">
+                <img src="assets/coming-to-stop.gif" alt="Vehicle coming to complete stop" loading="lazy">
+                <div class="gallery-card-body">
+                    <h3>Coming to stop &mdash; perception handoff zone</h3>
+                    <p>drive_0009 frame 392-440. Vehicle decelerating to a full stop. The transition from
+                       motion-based to static perception is where tracking often drops objects.</p>
+                    <div class="gallery-tags">
+                        <span class="gallery-tag tag-label">Perception</span>
+                        <span class="gallery-tag tag-decel">decel 1.1 m/s&sup2;</span>
+                        <span class="gallery-tag tag-speed">1 km/h</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card">
                 <img src="assets/forward.gif" alt="Forward driving with braking" loading="lazy">
                 <div class="gallery-card-body">
                     <h3>Highway braking &mdash; sensor fusion latency</h3>
@@ -656,6 +699,20 @@
                         <span class="gallery-tag tag-label">Loc + Per</span>
                         <span class="gallery-tag tag-decel">decel 1.1 m/s&sup2;</span>
                         <span class="gallery-tag tag-speed">43 km/h</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card">
+                <img src="assets/start-from-stop.gif" alt="Vehicle starting from standstill" loading="lazy">
+                <div class="gallery-card-body">
+                    <h3>Start from stop &mdash; static-to-dynamic transition</h3>
+                    <p>drive_0018 frame 147-195. After 15 seconds stationary, the vehicle begins to move.
+                       Initial velocity estimate is noisy. GNSS often reacquires with a jump here.</p>
+                    <div class="gallery-tags">
+                        <span class="gallery-tag tag-label">Localization</span>
+                        <span class="gallery-tag tag-yaw">yaw 1.4 &deg;/s</span>
+                        <span class="gallery-tag tag-speed">1 km/h</span>
                     </div>
                 </div>
             </div>
@@ -810,9 +867,9 @@
     <div class="container">
         <p>
             scene-db &mdash; MIT License &mdash;
-            <a href="https://github.com/rsasaki0109/scene-db">GitHub</a> &middot;
-            <a href="https://github.com/rsasaki0109/scene-db#installation">Install</a> &middot;
-            <a href="https://github.com/rsasaki0109/scene-db#cli-reference">Docs</a>
+            <a href="https://github.com/rsasaki0109/edge-scene-db">GitHub</a> &middot;
+            <a href="https://github.com/rsasaki0109/edge-scene-db#installation">Install</a> &middot;
+            <a href="https://github.com/rsasaki0109/edge-scene-db#cli-reference">Docs</a>
         </p>
     </div>
 </footer>
