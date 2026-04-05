@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>scene-db</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --border: #30363d;
+            --text: #e6edf3;
+            --text-muted: #8b949e;
+            --accent: #58a6ff;
+            --accent-hover: #79c0ff;
+            --green: #3fb950;
+            --orange: #d29922;
+            --code-bg: #1c2128;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        .container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+        /* Hero */
+        .hero {
+            padding: 80px 0 60px;
+            text-align: center;
+        }
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+        }
+        .hero h1 span { color: var(--accent); }
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto 32px;
+        }
+        .hero-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg);
+        }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover { border-color: var(--text-muted); }
+
+        /* Install */
+        .install {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px 24px;
+            max-width: 480px;
+            margin: 32px auto 0;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.95rem;
+            color: var(--green);
+        }
+        .install .prompt { color: var(--text-muted); }
+
+        /* Features */
+        .features {
+            padding: 60px 0;
+        }
+        .features h2 {
+            text-align: center;
+            font-size: 1.75rem;
+            margin-bottom: 40px;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .feature-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 24px;
+        }
+        .feature-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+        .feature-card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+        .feature-icon {
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+        }
+
+        /* CLI Demo */
+        .demo {
+            padding: 60px 0;
+        }
+        .demo h2 {
+            text-align: center;
+            font-size: 1.75rem;
+            margin-bottom: 40px;
+        }
+        .terminal {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+        .terminal-header {
+            background: var(--surface);
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        .terminal-dot {
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            background: var(--border);
+        }
+        .terminal-dot.red { background: #f85149; }
+        .terminal-dot.yellow { background: var(--orange); }
+        .terminal-dot.green { background: var(--green); }
+        .terminal-body {
+            padding: 20px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.9rem;
+            line-height: 1.7;
+            overflow-x: auto;
+        }
+        .terminal-body .cmd { color: var(--green); }
+        .terminal-body .prompt { color: var(--text-muted); }
+        .terminal-body .output { color: var(--text-muted); }
+        .terminal-body .highlight { color: var(--accent); }
+
+        /* Architecture */
+        .arch {
+            padding: 60px 0;
+        }
+        .arch h2 {
+            text-align: center;
+            font-size: 1.75rem;
+            margin-bottom: 40px;
+        }
+        .pipeline {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+        .pipeline-step {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px 20px;
+            text-align: center;
+            min-width: 140px;
+        }
+        .pipeline-step h4 { font-size: 0.95rem; margin-bottom: 4px; }
+        .pipeline-step p { font-size: 0.8rem; color: var(--text-muted); }
+        .pipeline-arrow {
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            padding: 0 8px;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 40px 0;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        footer a { color: var(--accent); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        @media (max-width: 600px) {
+            .hero h1 { font-size: 2rem; }
+            .hero p { font-size: 1rem; }
+            .pipeline { flex-direction: column; }
+            .pipeline-arrow { transform: rotate(90deg); }
+        }
+    </style>
+</head>
+<body>
+
+<section class="hero">
+    <div class="container">
+        <h1><span>scene-db</span></h1>
+        <p>Search and extract scenes from autonomous driving and robotics log data</p>
+        <div class="hero-actions">
+            <a href="https://github.com/rsasaki0109/scene-db" class="btn btn-primary">GitHub</a>
+            <a href="#quickstart" class="btn btn-secondary">Quick Start</a>
+        </div>
+        <div class="install">
+            <span class="prompt">$</span> pip install scene-db
+        </div>
+    </div>
+</section>
+
+<section class="features">
+    <div class="container">
+        <h2>Features</h2>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="feature-icon">&#x1F4E5;</div>
+                <h3>Dataset Ingestion</h3>
+                <p>Parse KITTI raw data (oxts, images, point clouds) and split into time-based scene chunks automatically.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#x1F50D;</div>
+                <h3>Scene Search</h3>
+                <p>Search scenes by text queries on auto-generated captions describing vehicle motion and behavior.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#x1F4CA;</div>
+                <h3>Feature Extraction</h3>
+                <p>Compute speed, distance traveled, and generate rule-based captions for each scene chunk.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#x1F4E4;</div>
+                <h3>Scene Export</h3>
+                <p>Export specific scenes with all associated files (images, LiDAR, IMU) to a clean directory structure.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#x1F5C4;</div>
+                <h3>SQLite Storage</h3>
+                <p>Zero-dependency local storage. No servers, no setup. Everything in a single file.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">&#x2318;</div>
+                <h3>Simple CLI</h3>
+                <p>Four commands: ingest, index, search, export. That's it.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="demo" id="quickstart">
+    <div class="container">
+        <h2>Quick Start</h2>
+
+        <div class="terminal">
+            <div class="terminal-header">
+                <div class="terminal-dot red"></div>
+                <div class="terminal-dot yellow"></div>
+                <div class="terminal-dot green"></div>
+            </div>
+            <div class="terminal-body">
+<span class="prompt">$</span> <span class="cmd">scene-db ingest</span> /data/kitti/2011_09_26_drive_0001_sync<br>
+<span class="output">Ingesting /data/kitti/2011_09_26_drive_0001_sync ...</span><br>
+<span class="output">Done. Created <span class="highlight">24</span> scene chunks.</span><br>
+<br>
+<span class="prompt">$</span> <span class="cmd">scene-db search</span> "moving forward"<br>
+<span class="output">Found <span class="highlight">12</span> scene(s):</span><br>
+<br>
+<span class="output">&nbsp;&nbsp;[<span class="highlight">kitti_2011_09_26_drive_0001_sync_003</span>]</span><br>
+<span class="output">&nbsp;&nbsp;&nbsp;&nbsp;vehicle moving forward, 42 km/h, traveled 58.3 m</span><br>
+<span class="output">&nbsp;&nbsp;&nbsp;&nbsp;frames 30-39, 2011-09-26T13:02:40 - 2011-09-26T13:02:44</span><br>
+<br>
+<span class="prompt">$</span> <span class="cmd">scene-db export</span> --id kitti_2011_09_26_drive_0001_sync_003 -o ./my_scene<br>
+<span class="output">Exported <span class="highlight">50</span> files to ./my_scene</span><br>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="arch">
+    <div class="container">
+        <h2>Pipeline</h2>
+        <div class="pipeline">
+            <div class="pipeline-step">
+                <h4>KITTI Raw</h4>
+                <p>oxts, images, LiDAR</p>
+            </div>
+            <div class="pipeline-arrow">&#x2192;</div>
+            <div class="pipeline-step">
+                <h4>Ingest</h4>
+                <p>Parse &amp; chunk</p>
+            </div>
+            <div class="pipeline-arrow">&#x2192;</div>
+            <div class="pipeline-step">
+                <h4>Features</h4>
+                <p>Speed, distance, caption</p>
+            </div>
+            <div class="pipeline-arrow">&#x2192;</div>
+            <div class="pipeline-step">
+                <h4>SQLite</h4>
+                <p>SceneChunk DB</p>
+            </div>
+            <div class="pipeline-arrow">&#x2192;</div>
+            <div class="pipeline-step">
+                <h4>Search / Export</h4>
+                <p>Query &amp; extract</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <div class="container">
+        <p>scene-db &mdash; MIT License &mdash; <a href="https://github.com/rsasaki0109/scene-db">GitHub</a></p>
+    </div>
+</footer>
+
+</body>
+</html>
