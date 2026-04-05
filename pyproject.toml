@@ -18,7 +18,8 @@ vlm = ["openai>=1.0"]
 embedding = ["sentence-transformers>=2.0"]
 openai-embedding = ["openai>=1.0"]
 rosbag = ["rosbags>=0.9"]
-all = ["openai>=1.0", "sentence-transformers>=2.0", "rosbags>=0.9"]
+viz = ["matplotlib>=3.5"]
+all = ["openai>=1.0", "sentence-transformers>=2.0", "rosbags>=0.9", "matplotlib>=3.5"]
 
 [project.scripts]
 scene-db = "scene_db.cli:app"

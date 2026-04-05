@@ -1,19 +1,60 @@
-"""Rosbag (ROS1) ingestion for LiDAR SLAM datasets."""
+"""Rosbag (ROS1 and ROS2) ingestion for LiDAR SLAM datasets."""
 
 import math
 import struct
 from datetime import datetime
 from pathlib import Path
+from enum import Enum, auto
 
 from scene_db.db import get_connection, insert_scene_chunks
 from scene_db.features import extract_features, generate_caption
 from scene_db.models import FileRef, OxtsRecord, SceneChunk
 
 
-def _parse_imu_msg(rawdata: bytes, typestore) -> dict | None:
+class RosbagFormat(Enum):
+    ROS1 = auto()
+    ROS2 = auto()
+
+
+def detect_rosbag_format(bag_path: Path) -> RosbagFormat:
+    """Detect whether a path is a ROS1 bag or ROS2 bag.
+
+    - .bag file -> ROS1
+    - directory with metadata.yaml -> ROS2
+    """
+    if bag_path.is_file() and bag_path.suffix == ".bag":
+        return RosbagFormat.ROS1
+    if bag_path.is_dir() and (bag_path / "metadata.yaml").exists():
+        return RosbagFormat.ROS2
+    raise ValueError(
+        f"Cannot detect rosbag format for {bag_path}. "
+        "Expected a .bag file (ROS1) or a directory with metadata.yaml (ROS2)."
+    )
+
+
+def _get_reader_and_typestore(bag_path: Path, fmt: RosbagFormat):
+    """Return (ReaderClass, typestore, deserialize_fn_name) for the given format."""
+    from rosbags.typesys import Stores, get_typestore
+
+    if fmt == RosbagFormat.ROS1:
+        from rosbags.rosbag1 import Reader
+        typestore = get_typestore(Stores.ROS1_NOETIC)
+        return Reader, typestore, "deserialize_ros1"
+    else:
+        from rosbags.rosbag2 import Reader
+        typestore = get_typestore(Stores.ROS2_HUMBLE)
+        return Reader, typestore, "deserialize_cdr"
+
+
+def _deserialize(rawdata: bytes, msgtype: str, typestore, method: str):
+    """Deserialize a message using the appropriate method (ROS1 or ROS2/CDR)."""
+    return getattr(typestore, method)(rawdata, msgtype)
+
+
+def _parse_imu_msg(rawdata: bytes, typestore, deserialize_method: str = "deserialize_ros1") -> dict | None:
     """Parse sensor_msgs/Imu message."""
     try:
-        msg = typestore.deserialize_ros1(rawdata, "sensor_msgs/msg/Imu")
+        msg = _deserialize(rawdata, "sensor_msgs/msg/Imu", typestore, deserialize_method)
         return {
             "orientation": (
                 msg.orientation.x,
@@ -43,10 +84,10 @@ def _quaternion_to_yaw(x: float, y: float, z: float, w: float) -> float:
     return math.atan2(siny_cosp, cosy_cosp)
 
 
-def _parse_odom_msg(rawdata: bytes, typestore) -> dict | None:
+def _parse_odom_msg(rawdata: bytes, typestore, deserialize_method: str = "deserialize_ros1") -> dict | None:
     """Parse nav_msgs/Odometry message."""
     try:
-        msg = typestore.deserialize_ros1(rawdata, "nav_msgs/msg/Odometry")
+        msg = _deserialize(rawdata, "nav_msgs/msg/Odometry", typestore, deserialize_method)
         return {
             "position": (
                 msg.pose.pose.position.x,
@@ -88,15 +129,19 @@ def _read_imu_records(
     bag_path: Path,
     imu_topic: str | None = None,
     odom_topic: str | None = None,
+    fmt: RosbagFormat | None = None,
 ) -> list[OxtsRecord]:
-    """Read IMU and/or odometry data from a rosbag, return as OxtsRecord list."""
-    from rosbags.rosbag1 import Reader
-    from rosbags.typesys import Stores, get_typestore
+    """Read IMU and/or odometry data from a rosbag, return as OxtsRecord list.
 
-    typestore = get_typestore(Stores.ROS1_NOETIC)
+    Supports both ROS1 (.bag) and ROS2 (directory with metadata.yaml) formats.
+    """
+    if fmt is None:
+        fmt = detect_rosbag_format(bag_path)
+
+    ReaderClass, typestore, deser_method = _get_reader_and_typestore(bag_path, fmt)
     records = []
 
-    with Reader(bag_path) as reader:
+    with ReaderClass(bag_path) as reader:
         detected = _detect_topics(reader)
         imu_topic = imu_topic or detected.get("imu")
         odom_topic = odom_topic or detected.get("odom")
@@ -109,7 +154,7 @@ def _read_imu_records(
                 for i, (conn, timestamp, rawdata) in enumerate(
                     reader.messages(connections=connections)
                 ):
-                    odom = _parse_odom_msg(rawdata, typestore)
+                    odom = _parse_odom_msg(rawdata, typestore, deser_method)
                     if odom is None:
                         continue
                     ts = datetime.fromtimestamp(timestamp / 1e9)
@@ -142,7 +187,7 @@ def _read_imu_records(
                 for i, (conn, timestamp, rawdata) in enumerate(
                     reader.messages(connections=connections)
                 ):
-                    imu = _parse_imu_msg(rawdata, typestore)
+                    imu = _parse_imu_msg(rawdata, typestore, deser_method)
                     if imu is None:
                         continue
                     ts = datetime.fromtimestamp(timestamp / 1e9)
@@ -179,11 +224,18 @@ def _read_imu_records(
     return records
 
 
-def _count_pointcloud_frames(bag_path: Path, points_topic: str | None = None) -> int:
+def _count_pointcloud_frames(
+    bag_path: Path,
+    points_topic: str | None = None,
+    fmt: RosbagFormat | None = None,
+) -> int:
     """Count the number of point cloud frames in a bag."""
-    from rosbags.rosbag1 import Reader
+    if fmt is None:
+        fmt = detect_rosbag_format(bag_path)
 
-    with Reader(bag_path) as reader:
+    ReaderClass, _, _ = _get_reader_and_typestore(bag_path, fmt)
+
+    with ReaderClass(bag_path) as reader:
         if points_topic is None:
             detected = _detect_topics(reader)
             points_topic = detected.get("points")
@@ -202,11 +254,17 @@ def ingest_rosbag(
     points_topic: str | None = None,
     db_path: Path | None = None,
 ) -> int:
-    """Ingest a ROS1 bag file into the scene database. Returns number of chunks created."""
-    if not bag_path.exists():
-        raise FileNotFoundError(f"Bag file not found: {bag_path}")
+    """Ingest a ROS1 or ROS2 bag into the scene database. Returns number of chunks created.
 
-    records = _read_imu_records(bag_path, imu_topic, odom_topic)
+    Automatically detects the format:
+    - .bag file -> ROS1 (uses rosbags.rosbag1.Reader)
+    - directory with metadata.yaml -> ROS2 (uses rosbags.rosbag2.Reader)
+    """
+    if not bag_path.exists():
+        raise FileNotFoundError(f"Bag not found: {bag_path}")
+
+    fmt = detect_rosbag_format(bag_path)
+    records = _read_imu_records(bag_path, imu_topic, odom_topic, fmt=fmt)
     if not records:
         return 0
 
@@ -230,11 +288,12 @@ def ingest_rosbag(
 
         chunk_id = f"{dataset_name}_{sequence_id}_{chunk_idx:03d}"
 
-        # Bag file itself as a file ref
+        # Bag file/directory as a file ref
+        file_type = "rosbag2" if fmt == RosbagFormat.ROS2 else "rosbag"
         file_refs = [
             FileRef(
                 scene_id=chunk_id,
-                file_type="rosbag",
+                file_type=file_type,
                 frame_index=start_idx,
                 file_path=str(bag_path),
             )

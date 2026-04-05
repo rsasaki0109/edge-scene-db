@@ -947,7 +947,7 @@
 <!-- ── Datasets ── -->
 <section class="datasets">
     <div class="container">
-        <h2>8 datasets, 2843 scenes, 99K frames</h2>
+        <h2>9 datasets, 2912 scenes, 168K frames</h2>
         <div class="dataset-row">
             <div class="dataset-badge">
                 <div class="icon">&#x1F697;</div>
@@ -1002,6 +1002,13 @@
                     <div class="desc">2x VLP-16+IMU, 20min</div>
                 </div>
             </div>
+            <div class="dataset-badge" style="border-left: 3px solid #f85149;">
+                <div class="icon">&#x1F415;</div>
+                <div>
+                    <div class="name">AlienGo</div>
+                    <div class="desc">Quadruped, Livox+Cam+IMU</div>
+                </div>
+            </div>
             <div class="dataset-badge" style="border-style: dashed; opacity: 0.5;">
                 <div class="icon">&#x2795;</div>
                 <div>
@@ -1047,6 +1054,11 @@
                 <h3>High yaw rate</h3>
                 <p><strong>KITTI drive_0014 / PPC Tokyo run3</strong><br>
                 Up to <strong>30.2 deg/s</strong>. Intersection turns that stress heading estimation.</p>
+            </div>
+            <div class="feature-card" style="border-left: 3px solid #f85149; border-right: 3px solid #f85149;">
+                <h3>Quadruped walking &mdash; extreme IMU</h3>
+                <p><strong>AlienGo</strong> (774 MB, 344s)<br>
+                Four-legged robot with Livox + T265 camera + IMU. Walking gait creates <strong>decel 29,693 m/s&sup2;</strong> and <strong>yaw 45,118 deg/s</strong> &mdash; 1000x more than any vehicle. The ultimate stress test for IMU preintegration and LiDAR-Visual-Inertial fusion.</p>
             </div>
         </div>
     </div>

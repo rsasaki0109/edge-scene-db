@@ -34,6 +34,8 @@ def ingest(
     if fmt == "auto":
         if dataset_path.suffix == ".bag":
             fmt = "rosbag"
+        elif dataset_path.is_dir() and (dataset_path / "metadata.yaml").exists():
+            fmt = "rosbag"
         elif (dataset_path / "oxts").exists():
             fmt = "kitti"
         elif any((dataset_path / v).exists() for v in ["v1.0-mini", "v1.0-trainval"]):
@@ -305,6 +307,57 @@ def stats(
     for kw, count in sorted(categories.items(), key=lambda x: -x[1]):
         bar = "\u2588" * count
         typer.echo(f"  {kw:16s} {count:3d} {bar}")
+
+
+@app.command()
+def visualize(
+    output_dir: Path = typer.Option("./plots", "-o", "--output-dir", help="Directory for output PNG files"),
+    db: Optional[Path] = typer.Option(None, help="Database path"),
+    loop_threshold: float = typer.Option(10.0, "--loop-threshold", help="Loop detection threshold in meters"),
+) -> None:
+    """Generate visualization plots (histograms, trajectories, edge-case summary)."""
+    from scene_db.edge_detect import detect_edge_cases
+    from scene_db.sequence_analysis import analyze_sequences, _get_sequence_positions
+    from scene_db.visualize import (
+        plot_edge_case_summary,
+        plot_feature_histograms,
+        plot_trajectory,
+    )
+
+    conn = get_connection(db)
+    scenes = list_all_scenes(conn)
+    if not scenes:
+        typer.echo("Database is empty. Nothing to visualize.")
+        conn.close()
+        return
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # 1. Feature histograms
+    hist_path = output_dir / "feature_histograms.png"
+    plot_feature_histograms(scenes, hist_path)
+    typer.echo(f"Saved feature histograms -> {hist_path}")
+
+    # 2. Trajectory plots per sequence
+    seqs = analyze_sequences(conn, loop_threshold)
+    for seq in seqs:
+        positions = _get_sequence_positions(conn, seq.dataset_name, seq.sequence_id)
+        if not positions:
+            continue
+        safe_name = f"{seq.dataset_name}__{seq.sequence_id}".replace("/", "_")
+        traj_path = output_dir / f"trajectory_{safe_name}.png"
+        title = f"{seq.dataset_name}/{seq.sequence_id} ({seq.total_distance_m:.0f} m)"
+        plot_trajectory(positions, traj_path, title=title, loop_threshold_m=loop_threshold)
+        typer.echo(f"Saved trajectory -> {traj_path}")
+
+    # 3. Edge case summary
+    edge_cases = detect_edge_cases(conn)
+    edge_path = output_dir / "edge_case_summary.png"
+    plot_edge_case_summary(edge_cases, edge_path)
+    typer.echo(f"Saved edge case summary -> {edge_path}")
+
+    conn.close()
+    typer.echo(f"\nAll plots saved to {output_dir}/")
 
 
 @app.command()
