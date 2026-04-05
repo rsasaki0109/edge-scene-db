@@ -33,6 +33,10 @@ def _make_chunk(scene_id="scene_001", file_refs=None):
         end_frame=2,
         avg_speed_kmh=30.0,
         distance_m=41.7,
+        max_accel_ms2=1.5,
+        max_decel_ms2=2.0,
+        avg_yaw_rate_degs=3.5,
+        max_yaw_rate_degs=8.0,
         caption="vehicle moving forward, 30 km/h, traveled 41.7 m",
         file_refs=file_refs or [],
     )
@@ -115,3 +119,7 @@ class TestExportScene:
         assert "Sequence: drive_0001" in content
         assert "Frames: 0-2" in content
         assert "Caption: vehicle moving forward" in content
+        assert "Max accel: 1.50 m/s^2" in content
+        assert "Max decel: 2.00 m/s^2" in content
+        assert "Avg yaw rate: 3.5 deg/s" in content
+        assert "Max yaw rate: 8.0 deg/s" in content

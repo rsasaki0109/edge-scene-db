@@ -21,6 +21,10 @@ CREATE TABLE IF NOT EXISTS scene_chunks (
     end_frame       INTEGER NOT NULL,
     avg_speed_kmh   REAL DEFAULT 0.0,
     distance_m      REAL DEFAULT 0.0,
+    max_accel_ms2   REAL DEFAULT 0.0,
+    max_decel_ms2   REAL DEFAULT 0.0,
+    avg_yaw_rate_degs REAL DEFAULT 0.0,
+    max_yaw_rate_degs REAL DEFAULT 0.0,
     caption         TEXT DEFAULT '',
     UNIQUE(dataset_name, sequence_id, chunk_index)
 );
@@ -52,8 +56,11 @@ def insert_scene_chunk(conn: sqlite3.Connection, chunk: SceneChunk) -> None:
         """INSERT OR REPLACE INTO scene_chunks
            (id, dataset_name, sequence_id, chunk_index,
             start_time, end_time, start_frame, end_frame,
-            avg_speed_kmh, distance_m, caption)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            avg_speed_kmh, distance_m,
+            max_accel_ms2, max_decel_ms2,
+            avg_yaw_rate_degs, max_yaw_rate_degs,
+            caption)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             chunk.id,
             chunk.dataset_name,
@@ -65,6 +72,10 @@ def insert_scene_chunk(conn: sqlite3.Connection, chunk: SceneChunk) -> None:
             chunk.end_frame,
             chunk.avg_speed_kmh,
             chunk.distance_m,
+            chunk.max_accel_ms2,
+            chunk.max_decel_ms2,
+            chunk.avg_yaw_rate_degs,
+            chunk.max_yaw_rate_degs,
             chunk.caption,
         ),
     )
@@ -90,7 +101,10 @@ def search_scenes(conn: sqlite3.Connection, query: str) -> list[SceneChunk]:
     cursor = conn.execute(
         """SELECT id, dataset_name, sequence_id, chunk_index,
                   start_time, end_time, start_frame, end_frame,
-                  avg_speed_kmh, distance_m, caption
+                  avg_speed_kmh, distance_m,
+                  max_accel_ms2, max_decel_ms2,
+                  avg_yaw_rate_degs, max_yaw_rate_degs,
+                  caption
            FROM scene_chunks
            WHERE caption LIKE ?
            ORDER BY dataset_name, sequence_id, chunk_index""",
@@ -104,7 +118,10 @@ def get_scene_by_id(conn: sqlite3.Connection, scene_id: str) -> SceneChunk | Non
     cursor = conn.execute(
         """SELECT id, dataset_name, sequence_id, chunk_index,
                   start_time, end_time, start_frame, end_frame,
-                  avg_speed_kmh, distance_m, caption
+                  avg_speed_kmh, distance_m,
+                  max_accel_ms2, max_decel_ms2,
+                  avg_yaw_rate_degs, max_yaw_rate_degs,
+                  caption
            FROM scene_chunks WHERE id = ?""",
         (scene_id,),
     )
@@ -121,7 +138,10 @@ def list_all_scenes(conn: sqlite3.Connection) -> list[SceneChunk]:
     cursor = conn.execute(
         """SELECT id, dataset_name, sequence_id, chunk_index,
                   start_time, end_time, start_frame, end_frame,
-                  avg_speed_kmh, distance_m, caption
+                  avg_speed_kmh, distance_m,
+                  max_accel_ms2, max_decel_ms2,
+                  avg_yaw_rate_degs, max_yaw_rate_degs,
+                  caption
            FROM scene_chunks
            ORDER BY dataset_name, sequence_id, chunk_index"""
     )
@@ -140,7 +160,11 @@ def _row_to_chunk(row: tuple) -> SceneChunk:
         end_frame=row[7],
         avg_speed_kmh=row[8],
         distance_m=row[9],
-        caption=row[10],
+        max_accel_ms2=row[10],
+        max_decel_ms2=row[11],
+        avg_yaw_rate_degs=row[12],
+        max_yaw_rate_degs=row[13],
+        caption=row[14],
     )
 
 

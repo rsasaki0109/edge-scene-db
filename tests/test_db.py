@@ -46,6 +46,10 @@ def _make_chunk(
         end_frame=49,
         avg_speed_kmh=30.0,
         distance_m=41.7,
+        max_accel_ms2=1.5,
+        max_decel_ms2=2.0,
+        avg_yaw_rate_degs=3.5,
+        max_yaw_rate_degs=8.0,
         caption=caption,
         file_refs=file_refs or [],
     )

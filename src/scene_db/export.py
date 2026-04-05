@@ -40,6 +40,10 @@ def export_scene(conn: sqlite3.Connection, scene_id: str, output_dir: Path) -> i
         f"Time: {chunk.start_time.isoformat()} - {chunk.end_time.isoformat()}\n"
         f"Speed: {chunk.avg_speed_kmh:.1f} km/h\n"
         f"Distance: {chunk.distance_m:.1f} m\n"
+        f"Max accel: {chunk.max_accel_ms2:.2f} m/s^2\n"
+        f"Max decel: {chunk.max_decel_ms2:.2f} m/s^2\n"
+        f"Avg yaw rate: {chunk.avg_yaw_rate_degs:.1f} deg/s\n"
+        f"Max yaw rate: {chunk.max_yaw_rate_degs:.1f} deg/s\n"
         f"Caption: {chunk.caption}\n"
     )
 

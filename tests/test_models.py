@@ -52,6 +52,10 @@ class TestSceneChunk:
         )
         assert chunk.avg_speed_kmh == 0.0
         assert chunk.distance_m == 0.0
+        assert chunk.max_accel_ms2 == 0.0
+        assert chunk.max_decel_ms2 == 0.0
+        assert chunk.avg_yaw_rate_degs == 0.0
+        assert chunk.max_yaw_rate_degs == 0.0
         assert chunk.caption == ""
         assert chunk.file_refs == []
 
@@ -65,9 +69,15 @@ class TestSceneChunk:
             start_time=t0, end_time=t1,
             start_frame=0, end_frame=10,
             avg_speed_kmh=36.0, distance_m=50.0,
+            max_accel_ms2=2.5, max_decel_ms2=3.0,
+            avg_yaw_rate_degs=5.0, max_yaw_rate_degs=15.0,
             caption="vehicle moving forward",
             file_refs=[ref],
         )
         assert chunk.avg_speed_kmh == 36.0
+        assert chunk.max_accel_ms2 == 2.5
+        assert chunk.max_decel_ms2 == 3.0
+        assert chunk.avg_yaw_rate_degs == 5.0
+        assert chunk.max_yaw_rate_degs == 15.0
         assert len(chunk.file_refs) == 1
         assert chunk.file_refs[0].file_type == "velodyne"

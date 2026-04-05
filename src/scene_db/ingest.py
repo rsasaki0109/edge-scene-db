@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 from scene_db.db import insert_scene_chunks, get_connection
-from scene_db.features import compute_avg_speed_kmh, compute_distance_m, generate_caption
+from scene_db.features import extract_features, generate_caption
 from scene_db.models import FileRef, OxtsRecord, SceneChunk
 
 # KITTI oxts field indices
@@ -103,11 +103,20 @@ def _extract_sequence_id(sequence_dir: Path) -> str:
     return sequence_dir.name
 
 
+def _collect_image_paths(file_refs: list[FileRef]) -> list[Path]:
+    """Collect image paths from file refs, preferring image_02 (color left)."""
+    image_refs = [r for r in file_refs if r.file_type == "image_02"]
+    if not image_refs:
+        image_refs = [r for r in file_refs if r.file_type.startswith("image_")]
+    return [Path(r.file_path) for r in image_refs]
+
+
 def ingest_sequence(
     sequence_dir: Path,
     dataset_name: str = "kitti",
     chunk_duration_sec: float = 5.0,
     db_path: Path | None = None,
+    use_vlm: bool = False,
 ) -> int:
     """Ingest a single KITTI sequence into the database. Returns number of chunks created."""
     # Find oxts data
@@ -133,9 +142,7 @@ def ingest_sequence(
     scene_chunks = []
     for chunk_idx, (start_idx, end_idx) in enumerate(chunk_ranges):
         chunk_records = records[start_idx : end_idx + 1]
-        avg_speed = compute_avg_speed_kmh(chunk_records)
-        distance = compute_distance_m(chunk_records)
-        caption = generate_caption(avg_speed, distance)
+        feat = extract_features(chunk_records)
 
         chunk_id = f"{dataset_name}_{sequence_id}_{chunk_idx:03d}"
 
@@ -153,6 +160,22 @@ def ingest_sequence(
                         )
                     )
 
+        # Generate caption
+        if use_vlm:
+            from scene_db.caption import generate_vlm_caption
+            image_paths = _collect_image_paths(file_refs)
+            caption = generate_vlm_caption(
+                image_paths, feat.avg_speed_kmh, feat.distance_m,
+            )
+        else:
+            caption = generate_caption(
+                feat.avg_speed_kmh,
+                feat.distance_m,
+                feat.max_decel_ms2,
+                feat.avg_yaw_rate_degs,
+                feat.max_yaw_rate_degs,
+            )
+
         scene_chunks.append(
             SceneChunk(
                 id=chunk_id,
@@ -163,8 +186,12 @@ def ingest_sequence(
                 end_time=chunk_records[-1].timestamp,
                 start_frame=start_idx,
                 end_frame=end_idx,
-                avg_speed_kmh=avg_speed,
-                distance_m=distance,
+                avg_speed_kmh=feat.avg_speed_kmh,
+                distance_m=feat.distance_m,
+                max_accel_ms2=feat.max_accel_ms2,
+                max_decel_ms2=feat.max_decel_ms2,
+                avg_yaw_rate_degs=feat.avg_yaw_rate_degs,
+                max_yaw_rate_degs=feat.max_yaw_rate_degs,
                 caption=caption,
                 file_refs=file_refs,
             )

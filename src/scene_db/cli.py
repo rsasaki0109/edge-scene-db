@@ -18,6 +18,7 @@ def ingest(
     dataset_path: Path = typer.Argument(..., help="Path to dataset directory"),
     dataset_name: str = typer.Option("kitti", help="Dataset name (kitti or nuscenes)"),
     chunk_duration: float = typer.Option(5.0, help="Chunk duration in seconds"),
+    vlm: bool = typer.Option(False, "--vlm", help="Use VLM for richer captions (requires OPENAI_API_KEY)"),
     nuscenes_version: str = typer.Option("v1.0-mini", help="nuScenes version subdirectory"),
     db: Optional[Path] = typer.Option(None, help="Database path (default: ~/.scene-db/scene.db)"),
 ) -> None:
@@ -32,7 +33,7 @@ def ingest(
             from scene_db.ingest_nuscenes import ingest_nuscenes
             n = ingest_nuscenes(dataset_path, nuscenes_version, chunk_duration, db)
         else:
-            n = ingest_sequence(dataset_path, dataset_name, chunk_duration, db)
+            n = ingest_sequence(dataset_path, dataset_name, chunk_duration, db, use_vlm=vlm)
     except FileNotFoundError as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)
@@ -107,6 +108,13 @@ def search_cmd(
             typer.echo(f"    {s.caption}")
             typer.echo(f"    frames {s.start_frame}-{s.end_frame}, "
                        f"{s.start_time.isoformat()} - {s.end_time.isoformat()}")
+            details = []
+            if s.max_decel_ms2 > 0.5:
+                details.append(f"decel {s.max_decel_ms2:.1f} m/s\u00b2")
+            if s.max_yaw_rate_degs > 1.0:
+                details.append(f"yaw {s.max_yaw_rate_degs:.1f} \u00b0/s")
+            if details:
+                typer.echo(f"    [{', '.join(details)}]")
             typer.echo()
 
     conn.close()

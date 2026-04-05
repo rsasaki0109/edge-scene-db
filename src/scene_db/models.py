@@ -45,5 +45,9 @@ class SceneChunk:
     end_frame: int
     avg_speed_kmh: float = 0.0
     distance_m: float = 0.0
+    max_accel_ms2: float = 0.0  # max longitudinal acceleration (m/s^2)
+    max_decel_ms2: float = 0.0  # max longitudinal deceleration (m/s^2, positive = braking)
+    avg_yaw_rate_degs: float = 0.0  # average yaw rate (deg/s)
+    max_yaw_rate_degs: float = 0.0  # peak yaw rate (deg/s)
     caption: str = ""
     file_refs: list[FileRef] = field(default_factory=list)
