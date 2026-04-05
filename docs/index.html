@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>scene-db &mdash; Find the failures hiding in your driving logs</title>
+    <meta property="og:title" content="scene-db">
+    <meta property="og:description" content="Find the failures hiding in your driving logs. Search and extract edge-case scenes from KITTI and nuScenes data.">
+    <meta property="og:image" content="https://rsasaki0109.github.io/scene-db/assets/og-image.png">
+    <meta property="og:type" content="website">
     <style>
         :root {
             --bg: #0a0e14;
@@ -392,7 +396,75 @@
         footer a { color: var(--accent); text-decoration: none; }
         footer a:hover { text-decoration: underline; }
 
+        /* ── Gallery ── */
+        .gallery {
+            padding: 80px 0;
+            background: linear-gradient(180deg, var(--bg) 0%, var(--surface) 50%, var(--bg) 100%);
+        }
+        .gallery h2 {
+            text-align: center;
+            font-size: 1.8rem;
+            margin-bottom: 12px;
+        }
+        .gallery > .container > p {
+            text-align: center;
+            color: var(--text-muted);
+            max-width: 640px;
+            margin: 0 auto 48px;
+            font-size: 1.05rem;
+        }
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+            gap: 24px;
+        }
+        .gallery-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .gallery-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        .gallery-card img {
+            width: 100%;
+            display: block;
+            border-bottom: 1px solid var(--border);
+        }
+        .gallery-card-body {
+            padding: 16px 20px;
+        }
+        .gallery-card-body h3 {
+            font-size: 1rem;
+            margin-bottom: 6px;
+        }
+        .gallery-card-body p {
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            margin-bottom: 10px;
+        }
+        .gallery-tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .gallery-tag {
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            font-family: 'SF Mono', Consolas, monospace;
+        }
+        .tag-speed { background: rgba(63,185,80,0.15); color: var(--green); }
+        .tag-yaw { background: rgba(180,142,255,0.15); color: var(--purple); }
+        .tag-decel { background: rgba(248,81,73,0.15); color: var(--red); }
+        .tag-label { background: rgba(78,168,246,0.15); color: var(--accent); }
+
         @media (max-width: 640px) {
+            .gallery-grid { grid-template-columns: 1fr; }
             .hero h1 { font-size: 2rem; }
             .pipeline { flex-direction: column; }
             .pipeline-arrow { transform: rotate(90deg); padding: 4px 0; }
@@ -412,7 +484,7 @@
         </p>
         <div class="hero-actions">
             <a href="https://github.com/rsasaki0109/scene-db" class="btn btn-primary">GitHub</a>
-            <a href="#edge-cases" class="btn btn-ghost">See Edge Cases</a>
+            <a href="#gallery" class="btn btn-ghost">See Real Scenes</a>
         </div>
         <div class="install-bar">
             <span class="prompt">$</span> pip install scene-db
@@ -517,6 +589,75 @@
                 <h3>Wet road reflections</h3>
                 <p>LiDAR gets ghost returns from puddles. Camera sees reflected sky. Both stacks get confused simultaneously.</p>
                 <div class="scenario-query"><span class="cmd">$</span> scene-db search -s <span class="t-a">"wet road reflections rain"</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── Gallery ── -->
+<section class="gallery" id="gallery">
+    <div class="container">
+        <h2>Real edge cases from KITTI</h2>
+        <p>
+            These scenes were found by running <code>scene-db</code> on KITTI raw data.
+            Each GIF is a 5-second chunk extracted by the tool.
+        </p>
+
+        <div class="gallery-grid">
+            <div class="gallery-card">
+                <img src="assets/turning.gif" alt="Turning scene at intersection" loading="lazy">
+                <div class="gallery-card-body">
+                    <h3>Intersection turn &mdash; localization stress test</h3>
+                    <p>drive_0009 frame 196-244. High yaw rate with moderate speed. EKF heading estimate
+                       is under maximum stress. IMU bias and wheel slip both contribute to drift here.</p>
+                    <div class="gallery-tags">
+                        <span class="gallery-tag tag-label">Localization</span>
+                        <span class="gallery-tag tag-yaw">yaw 25.4 &deg;/s</span>
+                        <span class="gallery-tag tag-speed">15 km/h</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card">
+                <img src="assets/curve.gif" alt="Continuous curve scene" loading="lazy">
+                <div class="gallery-card-body">
+                    <h3>Continuous curve &mdash; dead-reckoning drift</h3>
+                    <p>drive_0005 frame 0-48. Low speed + sustained yaw rate. Wheel odometry accumulates
+                       lateral error. GNSS multipath likely in this residential area with trees.</p>
+                    <div class="gallery-tags">
+                        <span class="gallery-tag tag-label">Localization</span>
+                        <span class="gallery-tag tag-yaw">yaw 10.9 &deg;/s</span>
+                        <span class="gallery-tag tag-speed">13 km/h</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card">
+                <img src="assets/stopping.gif" alt="Vehicle stopping scene" loading="lazy">
+                <div class="gallery-card-body">
+                    <h3>Approach to stop &mdash; perception critical zone</h3>
+                    <p>drive_0011 frame 98-146. Vehicle decelerating to stop. This is where late
+                       detection of obstacles or traffic signals has the highest consequence.</p>
+                    <div class="gallery-tags">
+                        <span class="gallery-tag tag-label">Perception</span>
+                        <span class="gallery-tag tag-decel">decel 1.7 m/s&sup2;</span>
+                        <span class="gallery-tag tag-speed">8 km/h</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card">
+                <img src="assets/forward.gif" alt="Forward driving with braking" loading="lazy">
+                <div class="gallery-card-body">
+                    <h3>Highway braking &mdash; sensor fusion latency</h3>
+                    <p>drive_0001 frame 0-48. Higher speed with braking events. At 43 km/h, even 100ms
+                       of fusion latency means 1.2m of position uncertainty.</p>
+                    <div class="gallery-tags">
+                        <span class="gallery-tag tag-label">Loc + Per</span>
+                        <span class="gallery-tag tag-decel">decel 1.1 m/s&sup2;</span>
+                        <span class="gallery-tag tag-speed">43 km/h</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
