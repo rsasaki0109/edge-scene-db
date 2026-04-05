@@ -1,173 +1,157 @@
-# scene-db
+# edge-scene-db
 
-**Search and extract scenes from autonomous driving and robotics log data.**
+**Find the edge cases hiding in your driving logs.**
 
-scene-db splits driving logs into time-based scene chunks, extracts features, and lets you search and export specific scenes via a simple CLI.
+edge-scene-db ingests autonomous driving and robotics log data, chunks it by time, extracts motion features, and automatically detects localization/perception edge cases.
 
-## Features
+## Supported Datasets
 
-- **Multi-dataset support**: KITTI raw data and nuScenes
-- Time-based scene chunking (configurable duration)
-- Automatic feature extraction (speed, distance)
-- Rule-based scene captioning + **VLM captioning** (OpenAI GPT-4o)
-- Text search + **semantic search** (sentence-transformers / OpenAI embeddings)
-- Scene export to directory
+| Format | Sensors | Command |
+|---|---|---|
+| **KITTI** | Camera, LiDAR, GPS/IMU | `scene-db ingest /path/to/drive_sync/` |
+| **nuScenes** | 6 cameras, LiDAR, RADAR | `scene-db ingest /path/ --dataset-name nuscenes` |
+| **rosbag** (GLIM, FAST-LIO, LIO-SAM, etc.) | LiDAR + IMU | `scene-db ingest file.bag` |
+| **PPC Dataset** | GNSS + IMU | `scene-db ingest /path/PPC-Dataset/` |
+
+Auto-detection: `.bag` files → rosbag, `oxts/` → KITTI, `v1.0-mini/` → nuScenes, `reference.csv` → PPC.
 
 ## Installation
 
 ```bash
-pip install -e .                    # Core (KITTI + text search)
-pip install -e ".[embedding]"       # + semantic search (sentence-transformers)
+pip install -e .                    # Core
+pip install -e ".[rosbag]"          # + rosbag support (GLIM, FAST-LIO, etc.)
+pip install -e ".[embedding]"       # + semantic search
 pip install -e ".[vlm]"             # + VLM captioning (OpenAI)
 pip install -e ".[all]"             # Everything
 ```
 
 ## Quick Start
 
-### 1. Ingest a KITTI sequence
+```bash
+# 1. Ingest data (auto-detects format)
+scene-db ingest /path/to/kitti_drive/
+scene-db ingest recording.bag
+scene-db ingest /path/PPC-Dataset/
+
+# 2. See what you have
+scene-db stats
+
+# 3. Detect edge cases automatically
+scene-db edge-cases
+scene-db edge-cases -c localization --severity critical
+
+# 4. Search with filters
+scene-db search "turning"
+scene-db search --min-yaw 20 --sort yaw
+scene-db search --min-decel 2.0 --sort decel
+scene-db search --max-speed 5
+
+# 5. Export a scene
+scene-db export --id <scene_id> -o ./output/
+```
+
+## Edge Case Detection
+
+`scene-db edge-cases` automatically flags scenes that stress localization or perception systems:
+
+| Category | Rule | Threshold | Severity |
+|---|---|---|---|
+| **Localization** | High yaw rate | > 20 deg/s | critical |
+| **Localization** | High speed (GPS latency) | > 60 km/h | warning/critical |
+| **Localization** | Near-zero speed (GPS noise) | < 3 km/h | warning |
+| **Localization** | Start from stop | accel + stationary | warning |
+| **Both** | Yaw + decel combined | yaw > 10 + decel > 1.0 | critical |
+| **Perception** | Hard braking (pitch shift) | > 3.0 m/s² | critical |
+| **Perception** | Decel to stop (tracking handoff) | decel > 1 + slow | warning |
 
 ```bash
-scene-db ingest /path/to/2011_09_26_drive_0001_sync
+# Filter by category and severity
+scene-db edge-cases -c localization --severity critical -n 20
+scene-db edge-cases -c perception -n 10
 ```
 
-This parses oxts (GPS/IMU) data, splits the sequence into 5-second chunks, computes speed/distance features, and stores everything in a local SQLite database (`~/.scene-db/scene.db`).
+## Feature Extraction
 
-### 2. Search for scenes
+Each 5-second scene chunk gets:
 
-```bash
-scene-db search "moving forward"
-```
+| Feature | Description | Edge case relevance |
+|---|---|---|
+| `avg_speed_kmh` | Average speed | GPS latency, LiDAR distortion |
+| `distance_m` | Distance traveled | Dead-reckoning drift |
+| `max_accel_ms2` | Peak acceleration | Sensor dynamics |
+| `max_decel_ms2` | Peak deceleration | Pitch shift, FOV change |
+| `avg_yaw_rate_degs` | Average heading change rate | IMU bias, wheel slip |
+| `max_yaw_rate_degs` | Peak heading change rate | EKF heading stress |
 
-```
-Found 2 scene(s):
-
-  [kitti_2011_09_26_drive_0001_sync_000]
-    vehicle moving forward, 26 km/h, traveled 32.6 m
-    frames 0-9, 2011-09-26T13:02:25 - 2011-09-26T13:02:29.500000
-
-  [kitti_2011_09_26_drive_0001_sync_001]
-    vehicle moving forward, 44 km/h, traveled 55.1 m
-    frames 10-19, 2011-09-26T13:02:30 - 2011-09-26T13:02:34.500000
-```
-
-### 3. Export a scene
-
-```bash
-scene-db export --id kitti_2011_09_26_drive_0001_sync_000 -o ./my_scene
-```
-
-Copies all associated files (images, point clouds, oxts data) into the output directory with a `scene_info.txt` metadata file.
-
-### 4. Semantic search (optional)
-
-```bash
-pip install -e ".[embedding]"
-scene-db index --embed              # Build embeddings
-scene-db search -s "car turning at intersection"
-```
-
-### 5. nuScenes ingestion
-
-```bash
-scene-db ingest /path/to/nuscenes --dataset-name nuscenes --nuscenes-version v1.0-mini
-```
-
-### 6. Check index status
-
-```bash
-scene-db index
-```
+Captions auto-generated with keywords: `stationary`, `moving slowly`, `moving forward`, `high speed`, `turning`, `sharp turn`, `gentle curve`, `braking`, `hard braking`.
 
 ## CLI Reference
 
 | Command | Description |
 |---|---|
-| `scene-db ingest <path>` | Ingest a dataset (KITTI or nuScenes) |
-| `scene-db index` | Show index status |
-| `scene-db index --embed` | Build embedding index for semantic search |
-| `scene-db search <query>` | Search scenes by caption text |
-| `scene-db search -s <query>` | Semantic search using embeddings |
-| `scene-db export --id <id>` | Export scene files to a directory |
+| `scene-db ingest <path>` | Ingest dataset (auto-detects format) |
+| `scene-db edge-cases` | Detect localization/perception edge cases |
+| `scene-db search <query>` | Search by caption text + feature filters |
+| `scene-db stats` | Show database statistics |
+| `scene-db index [--embed]` | Show index / build embeddings |
+| `scene-db export --id <id>` | Export scene files |
 
-### Options
+### Key Options
 
 ```
 scene-db ingest:
-  --dataset-name TEXT       Dataset name: kitti or nuscenes [default: kitti]
+  --dataset-name TEXT       auto, kitti, nuscenes, rosbag, ppc
   --chunk-duration FLOAT    Chunk duration in seconds [default: 5.0]
-  --nuscenes-version TEXT   nuScenes version [default: v1.0-mini]
-  --db PATH                 Database path [default: ~/.scene-db/scene.db]
+  --vlm                     Use VLM captioning (requires OPENAI_API_KEY)
+  --imu-topic TEXT          IMU topic for rosbag
+  --odom-topic TEXT         Odometry topic for rosbag
 
 scene-db search:
-  -s, --semantic            Use semantic search (requires embeddings)
-  -k INTEGER                Number of results [default: 10]
-  --db PATH                 Database path
+  --min-speed / --max-speed Filter by speed (km/h)
+  --min-decel               Filter by deceleration (m/s²)
+  --min-yaw                 Filter by yaw rate (deg/s)
+  --sort                    Sort by: speed, decel, yaw, accel
+  -s, --semantic            Semantic search (requires embeddings)
 
-scene-db export:
-  --id TEXT                 Scene chunk ID (required)
-  -o, --output PATH         Output directory [default: ./export]
-  --db PATH                 Database path
+scene-db edge-cases:
+  -c, --category            localization, perception, both
+  --severity                critical, warning, info
+  -n                        Max results [default: 20]
 ```
 
-## Supported Datasets
+## Tested Datasets
 
-### KITTI
-
-```
-<sequence_dir>/
-├── oxts/
-│   ├── timestamps.txt
-│   └── data/
-│       ├── 0000000000.txt
-│       └── ...
-├── image_00/data/
-├── image_02/data/
-└── velodyne_points/data/
-```
-
-Download: https://www.cvlibs.net/datasets/kitti/raw_data.php
-
-### nuScenes
-
-```
-<dataroot>/
-├── v1.0-mini/         # metadata JSONs
-│   ├── scene.json
-│   ├── sample.json
-│   ├── sample_data.json
-│   └── ego_pose.json
-├── samples/           # keyframe sensor data
-└── sweeps/            # non-keyframe sensor data
-```
-
-Download: https://www.nuscenes.org/download
+| Source | Type | Sensors | Scenes | Link |
+|---|---|---|---|---|
+| KITTI (25 seq) | Vehicle | LiDAR+Camera+GPS/IMU | 147 | [kitti](https://www.cvlibs.net/datasets/kitti/raw_data.php) |
+| nuScenes mini | Vehicle | 6cam+LiDAR+RADAR | 40 | [nuscenes](https://www.nuscenes.org/download) |
+| GLIM (Ouster) | Handheld | OS1-128 + IMU | 23 | [glim](https://github.com/koide3/glim) |
+| Cartographer 3D | Backpack | 2x VLP-16 + IMU | 243 | [cartographer](https://google-cartographer-ros.readthedocs.io/) |
+| PPC Dataset | Vehicle | GNSS + IMU | 2354 | [ppc](https://github.com/taroz/PPC-Dataset) |
+| **Total** | | | **2807** | **97,447 frames** |
 
 ## Architecture
 
 ```
-Dataset (KITTI / nuScenes)
-  → Ingest & Chunk (5s windows)
-    → Feature Extraction (speed, distance)
+Raw Data (KITTI / nuScenes / rosbag / PPC)
+  → Ingest & Chunk (5-sec time windows)
+    → Feature Extraction (speed, distance, yaw rate, acceleration)
       → Captioning (rule-based or VLM)
         → SQLite Storage
-          → Search (text LIKE or semantic embedding)
+          → Edge Case Detection (localization / perception rules)
+          → Search (text, filters, or semantic embedding)
             → Export
 ```
-
-- **Storage**: SQLite (`~/.scene-db/scene.db`)
-- **Chunking**: Fixed-length time windows (default 5 seconds)
-- **Search**: SQL LIKE on caption text, or cosine similarity on embeddings
-- **Captioning**: Rule-based (default) or VLM via OpenAI API
 
 ## Development
 
 ```bash
 git clone https://github.com/rsasaki0109/edge-scene-db.git
-cd scene-db
+cd edge-scene-db
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -e ".[test]"
-pytest
+pip install -e ".[test,rosbag]"
+pytest  # 120 tests
 ```
 
 ## License
