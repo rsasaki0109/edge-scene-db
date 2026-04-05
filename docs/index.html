@@ -599,7 +599,7 @@
     <div class="container">
         <h2>Real edge cases from KITTI</h2>
         <p>
-            These scenes were found by running <code>scene-db</code> on 12 KITTI sequences (62 scenes, 2725 frames).
+            These scenes were found by running <code>scene-db</code> on 13 KITTI sequences (66 scenes, 2913 frames).
             Each GIF is a 5-second chunk extracted by the tool.
         </p>
 
@@ -713,6 +713,48 @@
                         <span class="gallery-tag tag-label">Localization</span>
                         <span class="gallery-tag tag-yaw">yaw 1.4 &deg;/s</span>
                         <span class="gallery-tag tag-speed">1 km/h</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card">
+                <img src="assets/fastest.gif" alt="Fastest scene at 77 km/h" loading="lazy">
+                <div class="gallery-card-body">
+                    <h3>77 km/h &mdash; fastest in dataset, GPS latency critical</h3>
+                    <p>drive_0027 frame 147-187. At 21 m/s, a 50ms GPS update delay = 1.1m position error.
+                       LiDAR motion distortion is maximal. Any scan matching has to compensate aggressively.</p>
+                    <div class="gallery-tags">
+                        <span class="gallery-tag tag-label">Localization</span>
+                        <span class="gallery-tag tag-speed">77 km/h</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card">
+                <img src="assets/hardest-brake.gif" alt="Hardest braking scene" loading="lazy">
+                <div class="gallery-card-body">
+                    <h3>Hardest braking &mdash; 2.5 m/s&sup2; from 43 km/h</h3>
+                    <p>drive_0019 frame 147-195. Strongest deceleration in the dataset.
+                       Pitch angle changes during braking shift LiDAR FOV and camera horizon.</p>
+                    <div class="gallery-tags">
+                        <span class="gallery-tag tag-label">Loc + Per</span>
+                        <span class="gallery-tag tag-decel">decel 2.5 m/s&sup2;</span>
+                        <span class="gallery-tag tag-speed">43 km/h</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gallery-card">
+                <img src="assets/yaw-brake-combo.gif" alt="Combined yaw and braking" loading="lazy">
+                <div class="gallery-card-body">
+                    <h3>Yaw + brake combo &mdash; worst-case multi-axis stress</h3>
+                    <p>drive_0019 frame 392-440. Simultaneous high yaw rate and braking at near-stop speed.
+                       All sensor modalities are stressed: IMU coupling, wheel slip, and low-speed GPS noise.</p>
+                    <div class="gallery-tags">
+                        <span class="gallery-tag tag-label">Loc + Per</span>
+                        <span class="gallery-tag tag-yaw">yaw 13.2 &deg;/s</span>
+                        <span class="gallery-tag tag-decel">decel 2.2 m/s&sup2;</span>
+                        <span class="gallery-tag tag-speed">2 km/h</span>
                     </div>
                 </div>
             </div>

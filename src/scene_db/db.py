@@ -96,19 +96,60 @@ def insert_scene_chunks(conn: sqlite3.Connection, chunks: list[SceneChunk]) -> N
     conn.commit()
 
 
-def search_scenes(conn: sqlite3.Connection, query: str) -> list[SceneChunk]:
-    """Search scenes by caption text (LIKE match)."""
+def search_scenes(
+    conn: sqlite3.Connection,
+    query: str = "",
+    min_speed: float | None = None,
+    max_speed: float | None = None,
+    min_decel: float | None = None,
+    min_yaw: float | None = None,
+    min_accel: float | None = None,
+    sort_by: str | None = None,
+) -> list[SceneChunk]:
+    """Search scenes by caption text and/or feature filters."""
+    conditions = []
+    params: list = []
+
+    if query:
+        conditions.append("caption LIKE ?")
+        params.append(f"%{query}%")
+    if min_speed is not None:
+        conditions.append("avg_speed_kmh >= ?")
+        params.append(min_speed)
+    if max_speed is not None:
+        conditions.append("avg_speed_kmh <= ?")
+        params.append(max_speed)
+    if min_decel is not None:
+        conditions.append("max_decel_ms2 >= ?")
+        params.append(min_decel)
+    if min_yaw is not None:
+        conditions.append("max_yaw_rate_degs >= ?")
+        params.append(min_yaw)
+    if min_accel is not None:
+        conditions.append("max_accel_ms2 >= ?")
+        params.append(min_accel)
+
+    where = "WHERE " + " AND ".join(conditions) if conditions else ""
+
+    sort_map = {
+        "speed": "avg_speed_kmh DESC",
+        "decel": "max_decel_ms2 DESC",
+        "yaw": "max_yaw_rate_degs DESC",
+        "accel": "max_accel_ms2 DESC",
+    }
+    order = sort_map.get(sort_by or "", "dataset_name, sequence_id, chunk_index")
+
     cursor = conn.execute(
-        """SELECT id, dataset_name, sequence_id, chunk_index,
+        f"""SELECT id, dataset_name, sequence_id, chunk_index,
                   start_time, end_time, start_frame, end_frame,
                   avg_speed_kmh, distance_m,
                   max_accel_ms2, max_decel_ms2,
                   avg_yaw_rate_degs, max_yaw_rate_degs,
                   caption
            FROM scene_chunks
-           WHERE caption LIKE ?
-           ORDER BY dataset_name, sequence_id, chunk_index""",
-        (f"%{query}%",),
+           {where}
+           ORDER BY {order}""",
+        params,
     )
     return [_row_to_chunk(row) for row in cursor.fetchall()]
 

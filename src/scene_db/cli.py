@@ -64,12 +64,18 @@ def index(
 
 @app.command(name="search")
 def search_cmd(
-    query: str = typer.Argument(..., help="Search query text"),
+    query: str = typer.Argument("", help="Search query text (empty = all scenes)"),
     semantic: bool = typer.Option(False, "--semantic", "-s", help="Use semantic search (requires embeddings)"),
     top_k: int = typer.Option(10, "-k", help="Number of results for semantic search"),
+    min_speed: Optional[float] = typer.Option(None, "--min-speed", help="Minimum avg speed (km/h)"),
+    max_speed: Optional[float] = typer.Option(None, "--max-speed", help="Maximum avg speed (km/h)"),
+    min_decel: Optional[float] = typer.Option(None, "--min-decel", help="Minimum max deceleration (m/s^2)"),
+    min_yaw: Optional[float] = typer.Option(None, "--min-yaw", help="Minimum max yaw rate (deg/s)"),
+    min_accel: Optional[float] = typer.Option(None, "--min-accel", help="Minimum max acceleration (m/s^2)"),
+    sort: Optional[str] = typer.Option(None, "--sort", help="Sort by: speed, decel, yaw, accel"),
     db: Optional[Path] = typer.Option(None, help="Database path"),
 ) -> None:
-    """Search scenes by text query."""
+    """Search scenes by text query and/or feature filters."""
     conn = get_connection(db)
 
     if semantic:
@@ -96,7 +102,12 @@ def search_cmd(
                            f"{chunk.start_time.isoformat()} - {chunk.end_time.isoformat()}")
                 typer.echo()
     else:
-        results = search(conn, query)
+        results = search(
+            conn, query,
+            min_speed=min_speed, max_speed=max_speed,
+            min_decel=min_decel, min_yaw=min_yaw, min_accel=min_accel,
+            sort_by=sort,
+        )
         if not results:
             typer.echo("No scenes found.")
             conn.close()
