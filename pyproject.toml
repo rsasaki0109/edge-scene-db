@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "scene-db"
+name = "edge-scene-db"
 version = "0.1.0"
-description = "Search and extract scenes from autonomous driving and robotics log data"
+description = "Find localization and perception edge cases in autonomous driving and robotics log data"
 requires-python = ">=3.10"
 license = "MIT"
 dependencies = [
